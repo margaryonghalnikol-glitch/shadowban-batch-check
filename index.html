@@ -3,92 +3,66 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>批量 Twitter/X Shadowban 检测（安全版）</title>
+  <title>批量 Shadowban 检测工具（自动打开原页）</title>
   <style>
     body { font-family: system-ui, -apple-system, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; }
-    h1, h2 { text-align: center; }
+    h1 { text-align: center; }
     textarea { width: 100%; height: 220px; font-size: 1.1rem; padding: 0.8rem; border: 1px solid #ccc; border-radius: 6px; }
     button { display: block; margin: 1.5rem auto; padding: 0.8rem 2rem; font-size: 1.2rem; background: #0066cc; color: white; border: none; border-radius: 6px; cursor: pointer; }
     button:hover { background: #0055aa; }
     #results { margin-top: 2rem; }
-    .item { padding: 1rem; margin: 0.8rem 0; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-    .normal { background: #e6ffed; border-left: 5px solid #28a745; }
-    .banned { background: #ffe6e6; border-left: 5px solid #dc3545; }
-    .error  { background: #fff3cd; border-left: 5px solid #fd7e14; }
-    .info { color: #666; font-size: 0.95rem; }
+    .item { padding: 1rem; margin: 0.8rem 0; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); background: #e6ffed; }
+    .info { color: #666; font-size: 0.95rem; text-align: center; }
   </style>
 </head>
 <body>
 
 <h1>批量 Shadowban 检测工具</h1>
-<p class="info">一次建议放 5–15 个用户名（每行一个，可带 @），点开始后耐心等（每个间隔 10–20 秒，防被限流）。全自动 50 个会非常慢（可能 20–40 分钟），建议分批测。</p>
+<p class="info">输入用户名（每行一个，可带 @），点击开始后会自动在新标签页打开每个账号的检测页面。<br>建议一次 5–15 个，避免浏览器一次性开太多标签。<br>结果直接在新 tab 查看（来自 shadowban.yuzurisa.com，最准确）。</p>
 
 <textarea id="usernames" placeholder="@elonmusk
 grok
 xai
 你的用户名..."></textarea>
 
-<button onclick="startCheck()">开始检测</button>
+<button onclick="startCheck()">开始检测（开新标签）</button>
 
 <div id="results"></div>
 
 <script>
-async function checkOne(username) {
+function checkOne(username) {
   username = username.trim().replace('@', '');
   if (!username) return;
 
+  const url = `https://shadowban.yuzurisa.com/${username}`;
+  window.open(url, '_blank');  // 在新标签打开原检测页
+
   const resultDiv = document.createElement('div');
   resultDiv.className = 'item';
-  resultDiv.innerHTML = `<strong>@${username}</strong> → 检测中...`;
+  resultDiv.innerHTML = `<strong>@${username}</strong> → 已打开检测页（在新标签查看完整结果）`;
   document.getElementById('results').appendChild(resultDiv);
-
-  try {
-    const resp = await fetch(`https://shadowban.yuzurisa.com/${username}`);
-    if (!resp.ok) throw new Error('网络响应异常');
-
-    const html = await resp.text();
-
-    let status = '未知';
-    let cssClass = 'error';
-
-    if (html.includes('No shadowban detected') || html.includes('not shadowbanned')) {
-      status = '✅ 正常（未检测到 shadowban）';
-      cssClass = 'normal';
-    } else if (html.includes('Search Suggestion Ban') || html.includes('Search ban') || 
-               html.includes('Ghost ban') || html.includes('Reply deboosting')) {
-      status = '⚠️ 疑似被限制（建议去原网站详细查）';
-      cssClass = 'banned';
-    } else {
-      status = '解析失败，可能页面结构变了';
-    }
-
-    resultDiv.innerHTML = `<strong>@${username}</strong> → ${status}`;
-    resultDiv.className = `item ${cssClass}`;
-  } catch (err) {
-    resultDiv.innerHTML = `<strong>@${username}</strong> → 请求失败：${err.message}`;
-    resultDiv.className = 'item error';
-  }
 }
 
-async function startCheck() {
+function startCheck() {
   const input = document.getElementById('usernames').value.trim();
   if (!input) {
-    alert('请先输入用户名！');
+    alert('请先输入至少一个用户名！');
     return;
   }
 
   const users = input.split('\n').map(u => u.trim()).filter(Boolean);
-  document.getElementById('results').innerHTML = '<p style="text-align:center; color:#555;">开始检测... 总共 ' + users.length + ' 个，请勿关闭/刷新页面</p>';
+  document.getElementById('results').innerHTML = '<p style="text-align:center; color:#555;">正在打开检测页... 总共 ' + users.length + ' 个（浏览器可能会弹出多个标签，请允许）</p>';
 
-  for (const user of users) {
-    await checkOne(user);
-    // 随机延时 10–22 秒，模拟人类操作，降低被封风险
-    const delay = 10000 + Math.random() * 12000;
-    await new Promise(r => setTimeout(r, delay));
-  }
+  users.forEach((user, index) => {
+    setTimeout(() => {
+      checkOne(user);
+    }, index * 800);  // 每 0.8 秒开一个，防止浏览器阻塞
+  });
 
-  document.getElementById('results').insertAdjacentHTML('beforeend', 
-    '<p style="color:green; text-align:center; font-weight:bold; margin-top:2rem;">检测完成！可以复制结果或换一批继续测。</p>');
+  setTimeout(() => {
+    document.getElementById('results').insertAdjacentHTML('beforeend', 
+      '<p style="color:green; text-align:center; font-weight:bold; margin-top:2rem;">全部打开完成！切换到新标签查看结果，或继续输入下一批。</p>');
+  }, users.length * 800 + 1000);
 }
 </script>
 
