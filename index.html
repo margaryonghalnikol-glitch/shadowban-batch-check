@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>批量 Shadowban 检测工具（替代版）</title>
+  <title>批量 Shadowban 检测工具（稳定开 tab 版）</title>
   <style>
     body { font-family: system-ui, -apple-system, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; }
     h1 { text-align: center; }
@@ -13,40 +13,39 @@
     #results { margin-top: 2rem; }
     .item { padding: 1rem; margin: 0.8rem 0; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); background: #e6ffed; }
     .info { color: #666; font-size: 0.95rem; text-align: center; }
-    .warning { color: red; font-weight: bold; text-align: center; }
+    .warning { color: orange; font-weight: bold; text-align: center; }
   </style>
 </head>
 <body>
 
-<h1>批量 Shadowban 检测工具（yuzurisa 已失效，改用替代）</h1>
-<p class="info">原工具 shadowban.yuzurisa.com 目前 offline 无法使用。<br>现在自动在新标签打开 Circleboom 的 Twitter Shadowban 测试页（免费，但可能需简单注册/验证码）。<br>一次建议 3–10 个，避免浏览器开太多标签。</p>
-<p class="warning">如果 Circleboom 也要求登录，试试手动访问：https://circleboom.com/twitter-management-tool/twitter-search-tool/twitter-shadowban-test</p>
+<h1>批量 Shadowban 检测工具</h1>
+<p class="info">输入用户名（每行一个，可带 @），点击开始后会逐个在新标签打开 shadowban.yuzurisa.com 的检测页。<br>建议一次 2–5 个（浏览器可能拦截弹出窗口，请允许！）。<br>如果只开了一个，检查浏览器右上角是否有“弹出窗口被阻止”提示，允许后重试。</p>
+<p class="warning">注意：浏览器（如 Chrome）默认防弹出广告。如果被挡，点地址栏左侧的锁/盾牌图标 → 允许弹出窗口。</p>
 
 <textarea id="usernames" placeholder="@elonmusk
 grok
 xai
 你的用户名..."></textarea>
 
-<button onclick="startCheck()">开始检测（开新标签）</button>
+<button onclick="startCheck()">开始检测（逐个开新标签）</button>
 
 <div id="results"></div>
 
 <script>
-function checkOne(username) {
+function checkOne(username, index, total) {
   username = username.trim().replace('@', '');
   if (!username) return;
 
-  // Circleboom 的 shadowban 测试页（直接输入用户名后查；这里用主页，实际需手动输入或看是否支持参数）
-  const url = `https://circleboom.com/twitter-management-tool/twitter-search-tool/twitter-shadowban-test`;  // 如果支持参数，可改成带 ?username=xxx
-  window.open(url, '_blank');
+  const url = `https://shadowban.yuzurisa.com/${username}`;
+  window.open(url, '_blank');  // 开新标签
 
   const resultDiv = document.createElement('div');
   resultDiv.className = 'item';
-  resultDiv.innerHTML = `<strong>@${username}</strong> → 已打开 Circleboom 测试页（在新标签手动输入用户名查看）`;
+  resultDiv.innerHTML = `<strong>@${username}</strong> → 已尝试打开检测页（第 ${index + 1}/${total} 个，在新标签查看结果）`;
   document.getElementById('results').appendChild(resultDiv);
 }
 
-function startCheck() {
+async function startCheck() {
   const input = document.getElementById('usernames').value.trim();
   if (!input) {
     alert('请先输入至少一个用户名！');
@@ -54,18 +53,23 @@ function startCheck() {
   }
 
   const users = input.split('\n').map(u => u.trim()).filter(Boolean);
-  document.getElementById('results').innerHTML = '<p style="text-align:center; color:#555;">正在打开替代检测页... 总共 ' + users.length + ' 个（请在新标签操作）</p>';
+  if (users.length > 5) {
+    alert('为避免浏览器崩溃，一次建议不超过 5 个！请分批输入。');
+    return;
+  }
 
-  users.forEach((user, index) => {
-    setTimeout(() => {
-      checkOne(user);
-    }, index * 1500);  // 每1.5秒开一个，防浏览器拦截
-  });
+  document.getElementById('results').innerHTML = '<p style="text-align:center; color:#555;">正在逐个打开检测页... 总共 ' + users.length + ' 个（请耐心等，并允许任何弹出窗口提示）</p>';
 
-  setTimeout(() => {
-    document.getElementById('results').insertAdjacentHTML('beforeend', 
-      '<p style="color:green; text-align:center; font-weight:bold; margin-top:2rem;">打开完成！去新标签输入用户名检测，或试其他工具。</p>');
-  }, users.length * 1500 + 1000);
+  for (let i = 0; i < users.length; i++) {
+    checkOne(users[i], i, users.length);
+
+    // 关键：更长随机延时 2–5 秒，降低被浏览器拦截概率
+    const delay = 2000 + Math.random() * 3000;
+    await new Promise(resolve => setTimeout(resolve, delay));
+  }
+
+  document.getElementById('results').insertAdjacentHTML('beforeend', 
+    '<p style="color:green; text-align:center; font-weight:bold; margin-top:2rem;">全部尝试打开完成！检查新标签结果。如果只开了一个，允许浏览器弹出窗口后重新点“开始检测”。</p>');
 }
 </script>
 
