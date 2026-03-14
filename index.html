@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>批量 Shadowban 检测工具（自动打开原页）</title>
+  <title>批量 Shadowban 检测工具（替代版）</title>
   <style>
     body { font-family: system-ui, -apple-system, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; }
     h1 { text-align: center; }
@@ -13,12 +13,14 @@
     #results { margin-top: 2rem; }
     .item { padding: 1rem; margin: 0.8rem 0; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); background: #e6ffed; }
     .info { color: #666; font-size: 0.95rem; text-align: center; }
+    .warning { color: red; font-weight: bold; text-align: center; }
   </style>
 </head>
 <body>
 
-<h1>批量 Shadowban 检测工具</h1>
-<p class="info">输入用户名（每行一个，可带 @），点击开始后会自动在新标签页打开每个账号的检测页面。<br>建议一次 5–15 个，避免浏览器一次性开太多标签。<br>结果直接在新 tab 查看（来自 shadowban.yuzurisa.com，最准确）。</p>
+<h1>批量 Shadowban 检测工具（yuzurisa 已失效，改用替代）</h1>
+<p class="info">原工具 shadowban.yuzurisa.com 目前 offline 无法使用。<br>现在自动在新标签打开 Circleboom 的 Twitter Shadowban 测试页（免费，但可能需简单注册/验证码）。<br>一次建议 3–10 个，避免浏览器开太多标签。</p>
+<p class="warning">如果 Circleboom 也要求登录，试试手动访问：https://circleboom.com/twitter-management-tool/twitter-search-tool/twitter-shadowban-test</p>
 
 <textarea id="usernames" placeholder="@elonmusk
 grok
@@ -34,12 +36,13 @@ function checkOne(username) {
   username = username.trim().replace('@', '');
   if (!username) return;
 
-  const url = `https://shadowban.yuzurisa.com/${username}`;
-  window.open(url, '_blank');  // 在新标签打开原检测页
+  // Circleboom 的 shadowban 测试页（直接输入用户名后查；这里用主页，实际需手动输入或看是否支持参数）
+  const url = `https://circleboom.com/twitter-management-tool/twitter-search-tool/twitter-shadowban-test`;  // 如果支持参数，可改成带 ?username=xxx
+  window.open(url, '_blank');
 
   const resultDiv = document.createElement('div');
   resultDiv.className = 'item';
-  resultDiv.innerHTML = `<strong>@${username}</strong> → 已打开检测页（在新标签查看完整结果）`;
+  resultDiv.innerHTML = `<strong>@${username}</strong> → 已打开 Circleboom 测试页（在新标签手动输入用户名查看）`;
   document.getElementById('results').appendChild(resultDiv);
 }
 
@@ -51,18 +54,18 @@ function startCheck() {
   }
 
   const users = input.split('\n').map(u => u.trim()).filter(Boolean);
-  document.getElementById('results').innerHTML = '<p style="text-align:center; color:#555;">正在打开检测页... 总共 ' + users.length + ' 个（浏览器可能会弹出多个标签，请允许）</p>';
+  document.getElementById('results').innerHTML = '<p style="text-align:center; color:#555;">正在打开替代检测页... 总共 ' + users.length + ' 个（请在新标签操作）</p>';
 
   users.forEach((user, index) => {
     setTimeout(() => {
       checkOne(user);
-    }, index * 800);  // 每 0.8 秒开一个，防止浏览器阻塞
+    }, index * 1500);  // 每1.5秒开一个，防浏览器拦截
   });
 
   setTimeout(() => {
     document.getElementById('results').insertAdjacentHTML('beforeend', 
-      '<p style="color:green; text-align:center; font-weight:bold; margin-top:2rem;">全部打开完成！切换到新标签查看结果，或继续输入下一批。</p>');
-  }, users.length * 800 + 1000);
+      '<p style="color:green; text-align:center; font-weight:bold; margin-top:2rem;">打开完成！去新标签输入用户名检测，或试其他工具。</p>');
+  }, users.length * 1500 + 1000);
 }
 </script>
 
